@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { FightEvent, Source, Promotion } from '../types';
 
@@ -22,13 +23,9 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
 
   const searchPrompt = `
     Find major upcoming MMA fight cards for UFC, PFL, Bellator, ONE Championship, and BKFC scheduled within the next 3 months.
-    CRITICAL: You MUST find the specific Main Card start time in GMT/UTC. 
-    UFC PPVs usually start at 03:00 UTC (Sunday morning in Europe/Asia). 
-    UFC Fight Nights often start at 21:00 or 22:00 UTC.
-    PFL and BKFC often start at 00:00 or 01:00 UTC.
-    DO NOT return 00:00:00 for every event. Search for the real broadcast time.
-    Include promotion, full event name, venue, and location.
-    List the main card matchups, identifying the main event.
+    Search for the specific Main Card start time in GMT/UTC. 
+    Include promotion name, event title, venue name, and city/country location.
+    Identify the main event and co-main event matchups.
   `;
 
   try {
@@ -38,15 +35,15 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
       config: { tools: [{ googleSearch: {} }] },
     });
 
-    const groundedText = response.text;
     const sources = extractSources(response.candidates?.[0]?.groundingMetadata);
+    const contextText = response.text;
 
     const jsonPrompt = `
-      Based ONLY on the text below, generate a JSON array of MMA fight events.
-      CRITICAL: The "date" field MUST be a full ISO 8601 string in UTC (e.g., "2025-01-24T22:30:00Z"). 
-      Ensure the hours and minutes are accurately reflected based on the search result.
+      Convert the following MMA event data into a clean JSON array.
+      CRITICAL: The "date" field MUST be a full ISO 8601 string in UTC (e.g., "2025-05-15T22:00:00Z").
+      If a specific time isn't mentioned, use a likely start time (e.g., 22:00 UTC for Europe events, 03:00 UTC for US PPVs).
       
-      Text: ${groundedText}
+      Data: ${contextText}
     `;
 
     const jsonResponse = await ai.models.generateContent({
@@ -61,7 +58,7 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
             properties: {
               promotion: { type: Type.STRING, enum: Object.values(Promotion) },
               eventName: { type: Type.STRING },
-              date: { type: Type.STRING, description: "ISO 8601 UTC string with exact time" },
+              date: { type: Type.STRING, description: "ISO 8601 UTC string" },
               venue: { type: Type.STRING },
               location: { type: Type.STRING },
               fightCard: {
@@ -85,9 +82,10 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
       },
     });
 
-    return { events: JSON.parse(jsonResponse.text.trim()), sources };
+    const events = JSON.parse(jsonResponse.text.trim());
+    return { events, sources };
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to fetch live fight data.");
+    throw new Error("Unable to load latest fight data. The service might be experiencing high traffic.");
   }
 };
