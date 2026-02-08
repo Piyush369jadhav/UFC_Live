@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1A1A1E" />
-    <title>MMA COMMAND | Strategic Intelligence Feed</title>
+    <meta name="theme-color" content="#0F0F12" />
+    <title>MMA COMMAND | UFC • ONE • BKFC</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,7 +27,9 @@
             --accent: #715A5A;
             --text-main: #E2E8F0;
             --text-dim: #64748B;
-            --terminal-green: #4ADE80;
+            --ufc: #D20A0A;
+            --one: #FFD700;
+            --bkfc: #0072CE;
         }
 
         body {
@@ -43,93 +45,102 @@
         .mono { font-family: 'JetBrains Mono', monospace; }
 
         .control-panel {
-            background: rgba(28, 28, 33, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(15, 15, 18, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
         }
 
         .fighter-card {
             background: var(--bg-card);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
             transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            overflow: hidden;
         }
 
         .fighter-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.7);
         }
 
-        .fighter-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 2px; height: 100%;
-            background: var(--accent);
-            opacity: 0;
-            transition: opacity 0.3s;
+        .date-header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .fighter-card:hover::before {
-            opacity: 1;
+        .promo-indicator {
+            height: 3px;
+            width: 100%;
         }
 
-        .status-pill {
-            padding: 2px 8px;
-            font-size: 9px;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            border-radius: 2px;
-        }
-
-        .citation-link {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--text-dim);
-            transition: color 0.2s;
-        }
-
-        .citation-link:hover {
-            color: var(--accent);
-        }
-
-        @keyframes pulse-border {
-            0% { border-color: rgba(113, 90, 90, 0.2); }
-            50% { border-color: rgba(113, 90, 90, 0.6); }
-            100% { border-color: rgba(113, 90, 90, 0.2); }
-        }
-
-        .scanning-active {
-            animation: pulse-border 2s infinite;
-        }
+        .indicator-ufc { background: var(--ufc); }
+        .indicator-one { background: var(--one); }
+        .indicator-bkfc { background: var(--bkfc); }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg-deep); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 0; }
+
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+        }
+        .updating-tag {
+            animation: subtle-pulse 2s infinite;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-24 overflow-x-hidden selection:bg-[#715A5A]/50 selection:text-white">
     
     <div id="root">
-        <!-- Initial Loader -->
-        <div class="flex flex-col items-center justify-center min-h-screen p-6">
-            <div class="w-full max-w-xs space-y-8">
-                <div class="flex justify-center">
-                    <div class="w-12 h-12 border-2 border-t-[#715A5A] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+        <!-- Persistent UI structure -->
+        <header class="sticky top-0 z-[100] control-panel p-4 md:p-6">
+            <div class="container mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/5 border border-white/10 flex items-center justify-center rounded-sm">
+                        <span class="font-black italic text-xl text-[#715A5A]">M</span>
+                    </div>
+                    <div class="text-left">
+                        <h1 class="text-xl font-black uppercase tracking-tighter leading-none">COMBAT INTELLIGENCE</h1>
+                        <div class="flex items-center gap-2 mt-1" id="status-container">
+                            <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
+                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest" id="status-text">INITIALIZING...</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#715A5A]">
-                        <span>System Init</span>
-                        <span id="load-pct">0%</span>
-                    </div>
-                    <div class="h-1 bg-white/5 overflow-hidden">
-                        <div id="load-bar" class="h-full bg-[#715A5A] transition-all duration-1000" style="width: 0%"></div>
-                    </div>
-                    <p id="loading-status" class="text-center text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] pt-2">Initializing Grounding Protocol...</p>
+                
+                <nav class="flex flex-wrap justify-center gap-1" id="promo-filters">
+                    <!-- Filters populated by JS -->
+                </nav>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 md:px-10 py-12 max-w-7xl">
+            <div id="event-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                <!-- Initial loading state -->
+                <div class="col-span-full py-40 text-center opacity-20">
+                    <p class="text-[10px] font-black uppercase tracking-[0.4em] italic">Accessing Combat Archives...</p>
                 </div>
             </div>
-        </div>
+
+            <section id="grounding-section" class="mt-24 pt-16 border-t border-white/5 max-w-4xl mx-auto hidden">
+                <h3 class="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8 flex items-center gap-4">
+                    <span class="h-px bg-white/5 flex-grow"></span>
+                    Verified Signal Sources
+                    <span class="h-px bg-white/5 flex-grow"></span>
+                </h3>
+                <div id="source-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </section>
+        </main>
+
+        <footer class="fixed bottom-0 left-0 right-0 bg-[#0F0F12]/95 backdrop-blur-md border-t border-white/5 p-3 flex justify-between items-center px-6 md:px-12 z-50">
+            <div class="flex items-center gap-4">
+                <span class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600">TRI-SECTOR FEED v10.0</span>
+                <div class="h-2 w-px bg-white/10 hidden md:block"></div>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-[#715A5A] font-bold">UFC • ONE • BKFC</span>
+            </div>
+            <span id="last-updated-text" class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mono">STANDBY</span>
+        </footer>
     </div>
 
     <script type="module">
@@ -138,108 +149,146 @@
         const state = {
             events: [],
             sources: [],
-            loading: true,
+            loading: false,
             error: null,
             selectedPromotion: null,
-            lastUpdated: null,
-            loadProgress: 0
+            lastUpdated: null
         };
 
-        const CACHE_KEY = 'mma_command_v9_cache';
-        const CACHE_TIME = 1000 * 60 * 60 * 6; // 6 Hours
+        const CACHE_KEY = 'mma_tri_v10_cache';
+        const CACHE_TIME = 1000 * 60 * 60 * 4; // 4 Hours
 
-        const updateUI = (status, pct) => {
-            const statusEl = document.getElementById('loading-status');
-            const barEl = document.getElementById('load-bar');
-            const pctEl = document.getElementById('load-pct');
-            if (statusEl) statusEl.innerText = status;
-            if (barEl) barEl.style.width = pct + '%';
-            if (pctEl) pctEl.innerText = pct + '%';
-        };
-
-        const extractJSON = (text) => {
-            try {
-                // Remove Markdown if present
-                const clean = text.replace(/```json\n?|\n?```/g, '').trim();
-                return JSON.parse(clean);
-            } catch (e) {
-                const start = text.indexOf('[');
-                const end = text.lastIndexOf(']');
-                if (start !== -1 && end !== -1) return JSON.parse(text.substring(start, end + 1));
-                throw new Error("Critical data synthesis failure. Internal logic error.");
+        const updateStatus = (text, isPulse = true) => {
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.querySelector('#status-container span:first-child');
+            if (statusText) statusText.innerText = text.toUpperCase();
+            if (statusDot) {
+                statusDot.className = `w-1.5 h-1.5 rounded-full ${isPulse ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'}`;
             }
         };
 
         const getLocalTime = (iso) => {
-            if (!iso || iso === 'TBA') return { d: 'DATE PENDING', t: 'TBA' };
+            if (!iso || iso === 'TBA') return { day: 'DATE PENDING', date: 'TBA', time: 'TBA' };
             const d = new Date(iso);
-            if (isNaN(d.getTime())) return { d: iso.toUpperCase(), t: 'TBA' };
+            if (isNaN(d.getTime())) return { day: 'INVALID DATE', date: iso.toUpperCase(), time: 'TBA' };
             
             return {
-                d: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase(),
-                t: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                day: d.toLocaleDateString('en-US', { weekday: 'LONG' }).toUpperCase(),
+                date: d.toLocaleDateString('en-US', { month: 'SHORT', day: 'NUMERIC', year: 'numeric' }).toUpperCase(),
+                time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
             };
         };
 
-        const fetchIntelligence = async () => {
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (cached) {
-                const { data, sources, timestamp } = JSON.parse(cached);
-                if (Date.now() - timestamp < CACHE_TIME) {
-                    state.sources = sources || [];
-                    state.lastUpdated = timestamp;
-                    return data;
-                }
+        const renderEvents = () => {
+            const grid = document.getElementById('event-grid');
+            const filters = document.getElementById('promo-filters');
+            if (!grid) return;
+
+            const filtered = state.selectedPromotion ? state.events.filter(e => e.promotion === state.selectedPromotion) : state.events;
+
+            if (filtered.length === 0 && !state.loading) {
+                grid.innerHTML = `<div class="col-span-full py-40 text-center opacity-40 italic uppercase text-[10px] tracking-widest">No verified future cards in local sector.</div>`;
+            } else {
+                grid.innerHTML = filtered.map(e => {
+                    const t = getLocalTime(e.date);
+                    const promoColorClass = `indicator-${e.promotion.toLowerCase().replace(/\s/g, '')}`;
+                    
+                    return `
+                        <div class="fighter-card flex flex-col h-full">
+                            <div class="promo-indicator ${promoColorClass}"></div>
+                            <div class="date-header px-6 py-4 flex flex-col">
+                                <span class="text-[14px] font-black text-white tracking-[0.2em] leading-none mb-1">${t.day}</span>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[11px] font-bold text-[#715A5A] mono">${t.date}</span>
+                                    <span class="text-[10px] font-black bg-white/5 px-2 py-0.5 rounded-sm mono">${t.time}</span>
+                                </div>
+                            </div>
+
+                            <div class="p-6 border-b border-white/5 bg-white/[0.01]">
+                                <span class="text-[9px] font-black uppercase tracking-[0.3em] text-[#715A5A] mb-2 block">${e.promotion}</span>
+                                <h2 class="text-xl font-black uppercase italic tracking-tighter leading-tight text-white mb-4 line-clamp-2">${e.eventName}</h2>
+                            </div>
+
+                            <div class="p-6 flex-grow space-y-5">
+                                ${e.mainCard && e.mainCard.length > 0 ? e.mainCard.map(f => `
+                                    <div class="relative ${f.isMainEvent ? 'pb-4 border-b border-white/5' : ''}">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">${f.weightClass || 'BOUT'}</span>
+                                            ${f.isMainEvent ? '<span class="text-[7px] font-black text-white bg-[#715A5A] px-1.5 py-0.5 rounded-sm">MAIN EVENT</span>' : ''}
+                                        </div>
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-xs font-black uppercase text-white truncate flex-1">${f.f1}</span>
+                                            <span class="text-[9px] font-bold text-slate-700 italic px-1 shrink-0">VS</span>
+                                            <span class="text-xs font-black uppercase text-white truncate flex-1 text-right">${f.f2}</span>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="py-10 text-center opacity-20 text-[9px] font-bold uppercase italic">Full Lineup Pending</div>'}
+                            </div>
+
+                            <div class="px-6 py-4 bg-black/40 border-t border-white/5 flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                                <span class="truncate pr-2">${e.venue || 'TBA'}</span>
+                                <span class="text-[#715A5A] shrink-0">${e.location || ''}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
 
-            updateUI("Connecting to Secure Search Grounding...", 20);
+            // Update filters
+            const promos = [...new Set(state.events.map(e => e.promotion))].sort();
+            filters.innerHTML = `
+                <button onclick="window.selectPromo(null)" class="px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-transparent ${!state.selectedPromotion ? 'bg-white/10 border-white/10 text-white' : 'text-slate-500 hover:text-white'}">ALL_UNITS</button>
+                ${promos.map(p => `
+                    <button onclick="window.selectPromo('${p}')" class="px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-transparent ${state.selectedPromotion === p ? 'bg-white/10 border-white/10 text-white' : 'text-slate-500 hover:text-white'}">${p}</button>
+                `).join('')}
+            `;
+
+            // Update footer
+            const lastSyncEl = document.getElementById('last-updated-text');
+            if (lastSyncEl) lastSyncEl.innerText = state.lastUpdated ? `LAST_SYNC: ${new Date(state.lastUpdated).toLocaleTimeString()}` : 'STANDBY';
+
+            // Grounding
+            const groundingSection = document.getElementById('grounding-section');
+            const sourceGrid = document.getElementById('source-grid');
+            if (state.sources.length > 0) {
+                groundingSection.classList.remove('hidden');
+                sourceGrid.innerHTML = state.sources.map(s => `
+                    <a href="${s.uri}" target="_blank" class="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-sm hover:border-white/20 transition-all group">
+                        <span class="text-[10px] font-black uppercase tracking-tight text-slate-400 group-hover:text-white truncate pr-4">${s.title}</span>
+                        <span class="text-[8px] mono text-[#715A5A] uppercase">${new URL(s.uri).hostname.replace('www.', '')}</span>
+                    </a>
+                `).join('');
+            }
+        };
+
+        const fetchIntelligence = async () => {
+            updateStatus("Synchronizing Signal...", true);
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             
-            const now = new Date();
-            const today = now.toDateString();
-            
-            // Refined command for high accuracy
-            const prompt = `COMMAND: AGGREGATE UPCOMING MMA SCHEDULE
-            CURRENT_DATE: ${today}
+            const prompt = `COMMAND: AGGREGATE TRI-SECTOR MMA SCHEDULE
+            TARGETS: UFC, ONE Championship, BKFC (Bare Knuckle Fighting Championship)
+            DATE_CONTEXT: ${new Date().toDateString()}
             
             INSTRUCTIONS:
-            1. Search and cross-verify official schedules from: UFC, PFL, BKFC, Bellator (Champions Series), ONE Championship, and Rizin.
-            2. Validate each event date and main event lineup against at least two independent sources.
-            3. Ensure "date" is a valid ISO 8601 UTC string. If exact time is unknown, use 00:00:00Z.
-            4. Include only confirmed future events starting from tomorrow.
-            5. Return a strictly valid JSON array of event objects.
-            
-            SCHEMA:
-            {
-                "promotion": string,
-                "eventName": string,
-                "date": string (ISO 8601),
-                "venue": string,
-                "location": string,
-                "mainCard": [
-                    { "f1": string, "f2": string, "weightClass": string, "isMainEvent": boolean }
-                ]
-            }
-            
-            ACCURACY IS CRITICAL. CROSS-VERIFY DATES.`;
+            1. Fetch only verified upcoming events for UFC, ONE, and BKFC.
+            2. For each event, retrieve the official event name, date/time (ISO 8601), venue, and top 4 main card fights.
+            3. Accuracy is mandatory. If a date is ambiguous, find the official promotion source.
+            4. Return a JSON array of event objects.`;
 
             try {
-                updateUI("Searching Official Portals & Archives...", 40);
-                
                 const response = await ai.models.generateContent({
                     model: "gemini-3-pro-preview",
                     contents: prompt,
                     config: {
                         tools: [{ googleSearch: {} }],
-                        // Enable deep reasoning to verify facts
-                        thinkingConfig: { thinkingBudget: 16000 }, 
+                        thinkingConfig: { thinkingBudget: 24000 }, 
                         responseMimeType: "application/json",
                         responseSchema: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    promotion: { type: Type.STRING },
+                                    promotion: { type: Type.STRING, enum: ['UFC', 'ONE Championship', 'BKFC'] },
                                     eventName: { type: Type.STRING },
                                     date: { type: Type.STRING },
                                     venue: { type: Type.STRING },
@@ -263,227 +312,20 @@
                     }
                 });
 
-                updateUI("Verifying Intelligence Grounding...", 80);
-                
                 const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-                state.sources = grounding
-                    .filter(c => c.web)
-                    .map(c => ({ title: c.web.title, uri: c.web.uri }));
-
-                const rawText = response.text;
-                const events = extractJSON(rawText);
+                state.sources = grounding.filter(c => c.web).map(c => ({ title: c.web.title, uri: c.web.uri }));
                 
+                const events = JSON.parse(response.text);
+                state.events = events.sort((a,b) => new Date(a.date) - new Date(b.date));
                 state.lastUpdated = Date.now();
+                state.loading = false;
+                
                 localStorage.setItem(CACHE_KEY, JSON.stringify({ 
-                    data: events, 
+                    data: state.events, 
                     sources: state.sources, 
                     timestamp: state.lastUpdated 
                 }));
-                
-                updateUI("Feed Synchronized.", 100);
-                return events;
-            } catch (e) {
-                console.error("Intel Fetch Error:", e);
-                if (cached) return JSON.parse(cached).data;
-                throw e;
-            }
-        };
 
-        const render = () => {
-            const root = document.getElementById('root');
-            if (!root) return;
-
-            if (state.loading) return;
-
-            if (state.error) {
-                root.innerHTML = `
-                <div class="flex flex-col items-center justify-center min-h-screen p-12 text-center max-w-lg mx-auto">
-                    <div class="w-12 h-12 bg-red-500/10 text-red-500 flex items-center justify-center rounded-sm border border-red-500/20 mb-8">
-                        <span class="mono font-bold text-xl">!</span>
-                    </div>
-                    <h2 class="text-xl font-black uppercase tracking-tighter mb-4">Command Error</h2>
-                    <p class="text-xs text-slate-500 mono leading-relaxed mb-10">${state.error}</p>
-                    <button onclick="window.initApp(true)" class="bg-[#715A5A] text-white px-8 py-3 font-black uppercase text-[10px] tracking-[0.3em] hover:brightness-110 active:scale-95 transition-all rounded-sm">Force Signal Reset</button>
-                </div>`;
-                return;
-            }
-
-            const promos = [...new Set(state.events.map(e => e.promotion))].sort();
-            const filtered = state.selectedPromotion ? state.events.filter(e => e.promotion === state.selectedPromotion) : state.events;
-
-            root.innerHTML = `
-                <header class="sticky top-0 z-[100] control-panel border-b border-white/5 p-4 md:p-6">
-                    <div class="container mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
-                        <div class="flex items-center gap-4">
-                            <div class="w-8 h-8 bg-[#715A5A] flex items-center justify-center rounded-sm rotate-3 shadow-lg">
-                                <span class="font-black italic text-lg text-white">C</span>
-                            </div>
-                            <div class="text-left">
-                                <h1 class="text-xl font-black uppercase tracking-tighter leading-none">MMA COMMAND</h1>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Signal Verified • Grounding Active</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <nav class="flex flex-wrap justify-center gap-1">
-                            <button onclick="window.selectPromo(null)" class="px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-transparent ${!state.selectedPromotion ? 'bg-white/10 border-white/10 text-white' : 'text-slate-500 hover:text-white'}">ALL_SECTORS</button>
-                            ${promos.map(p => `
-                                <button onclick="window.selectPromo('${p}')" class="px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-transparent ${state.selectedPromotion === p ? 'bg-white/10 border-white/10 text-white' : 'text-slate-500 hover:text-white'}">${p}</button>
-                            `).join('')}
-                            <button onclick="window.initApp(true)" class="ml-2 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] border border-[#715A5A]/30 text-[#715A5A] hover:bg-[#715A5A] hover:text-white transition-all">REFRESH</button>
-                        </nav>
-                    </div>
-                </header>
-
-                <main class="container mx-auto px-4 md:px-10 py-12 max-w-7xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                        ${filtered.length > 0 ? filtered.map(e => renderEventCard(e)).join('') : `
-                            <div class="col-span-full py-40 text-center">
-                                <div class="w-12 h-12 border border-white/10 flex items-center justify-center mx-auto mb-6 opacity-20">?</div>
-                                <p class="text-[10px] font-black uppercase tracking-[0.4em] italic text-slate-500">No scheduled activities detected in sector.</p>
-                            </div>
-                        `}
-                    </div>
-
-                    ${state.sources.length > 0 ? `
-                        <section class="mt-24 pt-16 border-t border-white/5 max-w-4xl mx-auto">
-                            <h3 class="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8 flex items-center gap-4">
-                                <span class="h-px bg-white/5 flex-grow"></span>
-                                Grounding References
-                                <span class="h-px bg-white/5 flex-grow"></span>
-                            </h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                ${state.sources.map(s => `
-                                    <a href="${s.uri}" target="_blank" class="citation-link flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-sm hover:border-[#715A5A]/40 group">
-                                        <span class="truncate pr-4 group-hover:text-white">${s.title}</span>
-                                        <span class="text-[8px] uppercase font-black opacity-30">${new URL(s.uri).hostname}</span>
-                                    </a>
-                                `).join('')}
-                            </div>
-                        </section>
-                    ` : ''}
-                </main>
-
-                <footer class="fixed bottom-0 left-0 right-0 bg-[#0F0F12]/95 backdrop-blur-md border-t border-white/5 p-3 flex justify-between items-center px-6 md:px-12 z-50">
-                    <div class="flex items-center gap-4">
-                        <span class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600">Pro-Series v9.5</span>
-                        <div class="h-2 w-px bg-white/10 hidden md:block"></div>
-                        <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 hidden md:block">Grounding: High Fidelity</span>
-                    </div>
-                    <span class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mono">LAST_SYNC: ${state.lastUpdated ? new Date(state.lastUpdated).toLocaleTimeString() : '---'}</span>
-                </footer>
-            `;
-        };
-
-        const renderEventCard = (e) => {
-            const timeData = getLocalTime(e.date);
-            return `
-                <div class="fighter-card flex flex-col h-full shadow-2xl">
-                    <div class="bg-white/[0.02] p-6 border-b border-white/5">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="status-pill bg-[#715A5A]/20 text-[#715A5A] border border-[#715A5A]/20">${e.promotion}</span>
-                            <div class="text-right">
-                                <span class="text-[10px] font-black text-white/40 block leading-none mb-1">${timeData.d}</span>
-                                <span class="text-[9px] font-bold text-[#715A5A] mono">${timeData.t}</span>
-                            </div>
-                        </div>
-                        <h2 class="text-2xl font-black uppercase italic tracking-tighter leading-none text-white">${e.eventName}</h2>
-                    </div>
-
-                    <div class="p-6 flex-grow">
-                        <div class="space-y-6">
-                            ${e.mainCard && e.mainCard.length > 0 ? e.mainCard.map((f, i) => `
-                                <div class="relative ${f.isMainEvent ? 'pb-4 border-b border-white/5' : ''}">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">${f.weightClass || 'BOUT'}</span>
-                                        ${f.isMainEvent ? '<span class="text-[8px] font-black text-white bg-[#715A5A] px-1.5 py-0.5 italic rounded-sm">HEADLINER</span>' : ''}
-                                    </div>
-                                    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                                        <div class="text-left">
-                                            <p class="text-sm font-black uppercase truncate text-white">${f.f1}</p>
-                                        </div>
-                                        <div class="text-center">
-                                            <span class="text-[10px] font-black text-slate-700 italic">VS</span>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-sm font-black uppercase truncate text-white">${f.f2}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('') : `
-                                <div class="py-12 text-center opacity-20 border border-dashed border-white/10 rounded-sm">
-                                    <p class="text-[9px] font-black uppercase tracking-widest">Awaiting Lineup Confirmation</p>
-                                </div>
-                            `}
-                        </div>
-                    </div>
-
-                    <div class="px-6 py-4 bg-black/20 border-t border-white/5 flex justify-between items-center">
-                        <div class="min-w-0 pr-4">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500 truncate">${e.venue || 'TBA'}</p>
-                            <p class="text-[8px] font-bold uppercase text-[#715A5A] truncate mt-0.5">${e.location || 'Global Sector'}</p>
-                        </div>
-                        <div class="shrink-0 flex gap-1">
-                            <div class="w-1 h-1 bg-white/20 rounded-full"></div>
-                            <div class="w-1 h-1 bg-white/20 rounded-full"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        window.selectPromo = (p) => {
-            state.selectedPromotion = p;
-            render();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.initApp = async (forceRefresh = false) => {
-            try {
-                if (forceRefresh) {
-                    localStorage.removeItem(CACHE_KEY);
-                    location.reload();
-                    return;
-                }
-                
-                state.loading = true;
-                state.error = null;
-                
-                // Simulation of complex init stages
-                setTimeout(() => updateUI("Synthesizing Grounding Reports...", 30), 800);
-                
-                const data = await fetchIntelligence();
-                
-                const now = Date.now();
-                state.events = data
-                    .filter(e => {
-                        const eventDate = new Date(e.date);
-                        // Allow events from 12 hours ago (in case of ongoing cards)
-                        if (!isNaN(eventDate.getTime())) return eventDate.getTime() > (now - 43200000); 
-                        return true; 
-                    })
-                    .sort((a,b) => {
-                        const dA = new Date(a.date).getTime();
-                        const dB = new Date(b.date).getTime();
-                        if (isNaN(dA)) return 1;
-                        if (isNaN(dB)) return -1;
-                        return dA - dB;
-                    });
-
-                state.loading = false; 
-                state.error = null;
-                render();
-            } catch (e) {
-                console.error("App Crash:", e);
-                state.loading = false; 
-                state.error = (e.message || "Unknown Search Grounding Error"); 
-                render();
-            }
-        };
-
-        window.initApp();
-    </script>
-</body>
-</html>
+                updateStatus("Signal Locked", false);
+                renderEvents();
+            
