@@ -10,7 +10,7 @@ const state = {
 
 // --- CONSTANTS ---
 const CACHE_KEY = 'mma_fights_vanilla_v1';
-const CACHE_DURATION = 1000 * 60 * 60 * 4; // 4 Hours
+const CACHE_DURATION = 1000 * 60 * 60 * 2; // 2 Hours for faster updates
 
 // --- UTILS ---
 const getManualIST = (isoDateStr) => {
@@ -44,9 +44,9 @@ const fetchFights = async () => {
     }
 
     const ai = new GoogleGenAI({ apiKey: window.process.env.API_KEY || '' });
-    const prompt = `Find all major upcoming MMA fight cards for UFC, PFL, Bellator, ONE Championship, and BKFC for the next 4 months. 
-    Focus strictly on upcoming events. Return a JSON array of objects. 
-    Schema: promotion, eventName, date (ISO 8601 UTC), venue, location, fightCard (array of {fighter1, fighter2, weightClass, isMainEvent}).`;
+    const prompt = `LATEST INFO: Find major upcoming MMA cards for UFC, PFL, Bellator, ONE, and BKFC for the next 4 months. 
+    Strictly upcoming only. Return JSON array. 
+    Schema: promotion, eventName, date (ISO UTC), venue, location, fightCard (array of {fighter1, fighter2, weightClass, isMainEvent}).`;
 
     try {
         const response = await ai.models.generateContent({
@@ -54,6 +54,7 @@ const fetchFights = async () => {
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 0 }, // MAX SPEED: Disable thinking
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -207,7 +208,7 @@ const renderEventCard = (event) => {
                         <div class="flex items-center justify-between font-black text-sm uppercase">
                             <span class="flex-1 text-left truncate">${m.fighter1}</span>
                             <span class="mx-3 text-[9px] text-[#715A5A] italic opacity-50">VS</span>
-                            <span className="flex-1 text-right truncate">${m.fighter2}</span>
+                            <span class="flex-1 text-right truncate">${m.fighter2}</span>
                         </div>
                     </div>
                 `).join('')}
