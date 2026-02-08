@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -12,11 +13,11 @@ if (rootElement) {
   );
 }
 
-// Register service worker for notifications
+// Basic SW registration for installability
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').catch((err) => {
-      console.warn('Service Worker registration failed: ', err);
+      console.warn('SW registration failed:', err);
     });
   });
 }

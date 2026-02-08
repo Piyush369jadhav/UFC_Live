@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FightEvent, Source, Promotion } from './types';
 import { fetchUpcomingFights } from './services/geminiService';
 import Header from './components/Header';
@@ -14,32 +14,34 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
 
-  useEffect(() => {
-    const loadFights = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        setSources([]);
-        const { events: generatedEvents, sources: fetchedSources } = await fetchUpcomingFights();
+  const loadFights = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const { events: generatedEvents, sources: fetchedSources } = await fetchUpcomingFights();
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      const now = new Date();
+      // Filter out events that ended more than 12 hours ago
+      const upcomingEvents = generatedEvents.filter(event => {
+          const eventDate = new Date(event.date);
+          return eventDate.getTime() > (now.getTime() - 12 * 60 * 60 * 1000);
+      });
 
-        const upcomingEvents = generatedEvents.filter(event => new Date(event.date) >= today);
-
-        upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        setAllEvents(upcomingEvents);
-        setSources(fetchedSources);
-      } catch (err) {
-        setError('Failed to fetch live fight data from Google. The API might be busy. Please try again in a moment.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFights();
+      upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      setAllEvents(upcomingEvents);
+      setSources(fetchedSources);
+    } catch (err) {
+      setError('Live data search is currently unavailable. Please check back in a few minutes.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFights();
+  }, [loadFights]);
 
   const handleSelectPromotion = (promotion: Promotion) => {
     setSelectedPromotion(promotion);
@@ -51,7 +53,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (isLoading) return <LoadingSpinner />;
-    if (error) return <ErrorDisplay message={error} />;
+    if (error && allEvents.length === 0) return <ErrorDisplay message={error} />;
     
     if (selectedPromotion) {
         const promotionEvents = allEvents.filter(event => event.promotion === selectedPromotion);
@@ -68,14 +70,21 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen font-sans">
+    <div className="min-h-screen font-sans bg-[#37353E] text-[#D3DAD9]">
       <Header 
         selectedPromotion={selectedPromotion} 
         onBack={handleGoBack} 
       />
-      <main className="container mx-auto p-4 md:p-6">
+      <main className="container mx-auto p-4 md:p-6 pb-20">
         {renderContent()}
       </main>
+      
+      {/* Quick Refresh Indicator */}
+      {!isLoading && !error && (
+          <div className="fixed bottom-4 right-4 text-[10px] text-[#715A5A] font-bold uppercase tracking-widest opacity-40">
+              Data Cached for 6h
+          </div>
+      )}
     </div>
   );
 };

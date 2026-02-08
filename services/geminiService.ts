@@ -1,6 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FightEvent, Source, Promotion } from '../types';
 
+const CACHE_KEY = 'mma_fights_cache';
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+
 const extractSources = (groundingMetadata: any): Source[] => {
     if (!groundingMetadata?.groundingChunks) return [];
     const sources: Source[] = [];
@@ -18,41 +21,35 @@ const extractSources = (groundingMetadata: any): Source[] => {
 };
 
 export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sources: Source[] }> => {
+  // 1. Check Cache First
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < CACHE_DURATION) {
+      console.log("Loading from cache...");
+      return data;
+    }
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const searchPrompt = `
-    Find major upcoming MMA fight cards for UFC, PFL, Bellator, ONE Championship, and BKFC scheduled within the next 3 months.
-    CRITICAL: You MUST find the specific Main Card start time in GMT/UTC. 
-    UFC PPVs usually start at 03:00 UTC (Sunday morning in Europe/Asia). 
-    UFC Fight Nights often start at 21:00 or 22:00 UTC.
-    PFL and BKFC often start at 00:00 or 01:00 UTC.
-    DO NOT return 00:00:00 for every event. Search for the real broadcast time.
-    Include promotion, full event name, venue, and location.
-    List the main card matchups, identifying the main event.
+  // 2. Single-Pass Prompt for maximum speed
+  const prompt = `
+    Search for and list major upcoming MMA fight cards for UFC, PFL, Bellator, ONE Championship, and BKFC scheduled within the next 3 months.
+    
+    CRITICAL: 
+    1. Find specific Main Card start times (e.g., UFC PPV at 03:00 UTC).
+    2. Return the data as a JSON array.
+    3. The "date" field MUST be a full ISO 8601 string in UTC (e.g., "2025-01-24T22:30:00Z").
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: searchPrompt,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-
-    const groundedText = response.text;
-    const sources = extractSources(response.candidates?.[0]?.groundingMetadata);
-
-    const jsonPrompt = `
-      Based ONLY on the text below, generate a JSON array of MMA fight events.
-      CRITICAL: The "date" field MUST be a full ISO 8601 string in UTC (e.g., "2025-01-24T22:30:00Z"). 
-      Ensure the hours and minutes are accurately reflected based on the search result.
-      
-      Text: ${groundedText}
-    `;
-
-    const jsonResponse = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: jsonPrompt,
-      config: {
+      contents: prompt,
+      config: { 
+        tools: [{ googleSearch: {} }],
+        thinkingConfig: { thinkingBudget: 0 }, // Minimize latency
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -61,7 +58,7 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
             properties: {
               promotion: { type: Type.STRING, enum: Object.values(Promotion) },
               eventName: { type: Type.STRING },
-              date: { type: Type.STRING, description: "ISO 8601 UTC string with exact time" },
+              date: { type: Type.STRING, description: "ISO 8601 UTC string" },
               venue: { type: Type.STRING },
               location: { type: Type.STRING },
               fightCard: {
@@ -85,9 +82,23 @@ export const fetchUpcomingFights = async (): Promise<{ events: FightEvent[], sou
       },
     });
 
-    return { events: JSON.parse(jsonResponse.text.trim()), sources };
+    const events = JSON.parse(response.text.trim());
+    const sources = extractSources(response.candidates?.[0]?.groundingMetadata);
+    const result = { events, sources };
+
+    // 3. Save to Cache
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      data: result,
+      timestamp: Date.now()
+    }));
+
+    return result;
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to fetch live fight data.");
+    // If API fails but we have old cache, return that as fallback
+    if (cached) {
+        return JSON.parse(cached).data;
+    }
+    throw new Error("Failed to fetch live fight data. Check your internet connection.");
   }
 };
